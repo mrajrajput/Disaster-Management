@@ -1,0 +1,41 @@
+######################################################################################
+##############      JDKs to Remote machie      #######################################
+######################################################################################
+jdkDest: /usr/local/java/
+jdkSrc: /home/mkumar/Downloads/
+
+java8JCE: /home/mkumar/Downloads/UnlimitedJCEPolicyJDK8/
+java7JCE: /home/mkumar/Downloads/UnlimitedJCEPolicy/
+java6JCE: /home/mkumar/Downloads/jce/
+java5JCE: /home/mkumar/Downloads/jce5/
+#TODO delete these 2 variables after checking in playbook
+localPolicy: local_policy.jar
+USExportPolicy: US_export_policy.jar
+######################################################################################
+
+
+######################################################################################
+##############      Tomcats to Remote machie      ####################################
+######################################################################################
+tomcatDest: /usr/local/tomcat/
+tomcatSrc: /home/mkumar/Downloads/
+######################################################################################
+
+
+######################################################################################
+##############      Applications to Remote machie      ###############################
+######################################################################################
+platform: cat/
+appDest: /usr/local/appservers/
+######################################################################################
+
+
+######################################################################################
+##############      Install and clone GIT Repo on local machine    ###################
+######################################################################################
+#Remote: copy the url of your git repository. 
+#You will be asked password at this stage while run of playbook
+repoRemoteURL: https://MKumar-001@dev.azure.com/MKumar-001/TestProject/_git/TestProject
+#Local: repo path
+localRepoPath: /home/mkumar/ansible/repo/
+######################################################################################

@@ -1,0 +1,115 @@
+ - name: Create the user "{{ projectName }}"
+   user:  name="{{ projectName }}"
+   become: true
+
+ - name: Create the  group "{{ projectGroup }}"
+   group: name="{{ projectGroup }}"
+   become: true
+
+ # Note: we have to make each dir in each step. Unless they are coming from common variable file(group_vars/all.yml)
+ # Also we have to make sure that variables from all.yml and parent's role variable needs to be in separate {{}}
+ # Creating directories on remote vms.
+ - name: Make new directory "{{ appDest + platform }}{{ projectContainer }}/{{ projectName }}" for app in platform "{{ platform }}"
+   file:
+     path: "{{ item }}"
+     state: directory
+     mode: "o+rwx"
+   with_items:
+      - "{{ appDest }}"
+      - "{{ appDest + platform }}"
+      - "{{ appDest + platform }}{{ projectContainer }}"
+      - "{{ appDest + platform }}{{ projectContainer }}/{{ projectName }}"
+   become: true
+
+ # Note: we are assigning group and owner to container directory recursively.
+ - name: Give owner as "{{ projectName }}" and group as "{{ projectGroup }}"
+   file:
+     path: "{{ appDest + platform }}{{ projectContainer }}"
+     owner: "{{ projectName }}"
+     group: "{{ projectGroup }}"
+     recurse: yes
+   become: true
+
+ - name: check status of jdk in container
+   stat: path="{{ appDest + platform }}/{{ projectContainer }}/{{ java }}"
+   register: javaExists
+
+ #copying tomat if jdk-version directory is not present
+ #mode:pull is remote is src
+ - name: copy jdk "{{ jdkDest + java }}" to "{{ appDest + platform }}{{ projectName }}"
+   synchronize:
+     mode: pull
+     src: "{{ jdkDest + java }}"
+     dest: "{{ appDest + platform }}/{{ projectContainer }}"
+   delegate_to: "{{ inventory_hostname  }}"
+   when: javaExists.stat.exists==false
+   become: true
+
+ - name: check status of tomcat in container
+   stat: path="{{ appDest + platform + projectContainer }}/{{ tomcat }}"
+   register: isTomcat
+
+ #copying tomat if apache-tomcat-version directory is not  present
+ - name: prepare tomcat "{{ tomcatDest + tomcat }}" to "{{ appDest + platform + projectName}}"
+   synchronize:
+     mode: pull
+     src: "{{ tomcatDest + tomcat }}"
+     dest: "{{ appDest + platform }}/{{ projectContainer }}"
+   delegate_to: "{{ inventory_hostname  }}"
+   when: isTomcat.stat.exists==false
+   become: true
+
+  #Addding JAVA_OPTS in server
+ - lineinfile:
+     path: "{{ appDest + platform }}/{{ projectName }}/{{ tomcat }}/bin/setenv.sh"
+     create: yes
+     regexp: '^export JAVA_OPTS'
+     line: 'export JAVA_OPTS="$JAVA_OPTS {{ JAVA_OPTS}}"'
+     owner: "{{ projectName }}"
+     group: "{{ projectGroup }}"
+     mode: 0644
+     state: present
+   become: true
+
+ #making new dir on local machine for setting up of git repo.
+ #TODO: write task for deleting this local repo
+ - name: Make new directory
+   delegate_to: localhost
+   file:
+     path: "{{ item }}"
+     state: directory
+     mode: "o+w"
+   with_items:
+        - "{{ localRepoPath }}"
+        - "{{ localRepoPath + platform }}"
+        - "{{ localRepoPath + platform }}/{{ projectContainer }}"
+   become: true
+
+ #installing git locally. 
+ - name: Install git
+   delegate_to: localhost
+   yum:
+     name: git
+     state: present
+   become: true
+ # cloning repo on localhost(where ansible is installed), and in next step moving to vms.
+ # tried to directly check-out code from git at remote, but wasn't able to do it.
+ - name: Clone git repo at this local location "{{ appDest + platform + projectContainer + projectName }}"
+   delegate_to: localhost
+   git:
+     repo: "{{ repoRemoteURL }}"
+     dest: "{{ localRepoPath + platform }}/{{ projectContainer }}/{{ projectName }}"
+     force: yes
+     ssh_opts: -o StrictHostKeyChecking=no
+     clone: yes
+   register: isCloned
+   become: true
+
+  #copying repo from localhost to remote vms
+ - name: copy repo "{{ projectName }}" from "{{ localRepoPath + platform }}{{ projectContainer }}/{{ projectName }}"  to "{{ appDest + platform }}{{ projectContainer }}"
+   copy:
+     src: "{{ localRepoPath + platform }}{{ projectContainer }}/{{ projectName }}/"
+     dest: "{{ appDest + platform }}{{ projectContainer }}/{{ projectName }}/"
+   become: true
+
+

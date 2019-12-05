@@ -1,0 +1,34 @@
+######################################################################################
+##############      Applications to Remote machine      ##############################
+######################################################################################
+####### Step 1. Copy jdks and tomcat to remote machine                               #
+####### Step 2. Create Application as App name and App group, TODO replace name and  #
+#######         group with service principal with new credentials from AD?           #
+####### Step 3. Export JAVA_OPTS                                                     #
+####### Step 4. We are not moving .war file and start/stop tomcat with ansible       #
+####### Step 5. We are installing GIT locally                                        #
+####### Step 6. We are checking out the project('projectName') locally and           #  
+#######         moving to remotes.                                                   #
+######################################################################################
+######################################################################################
+- hosts: [dhhs]
+  roles:
+       # role:         always remain application. This will run the applicaiton playbook
+       # java:         put the correct release_version of jdk we want to use, make sure jdk is present at /usr/local/java/
+       # tomcat:       put the correct release_version of apache tomcat we want to use, make sure tomcat
+       #               is present at /usr/local/tomcat/
+       # projectName:  the name of the project(if project is made up of multiple module then name of the earFile/warFile). 
+       #               ProjectName will be the user of the application ecosystem(container).
+       # projectContainer:  This is a personal space for the app to hold its metadata(jdk, tomcat and its repository).
+       # projectGroup: Every project falls into a group. For example: Test_abc, Test_abc_EFSBatch, Test_def.. falls into group of
+       #               Test. Similarly cnn-podcast, cnn-stories, cnn-news.. falls into group of cnn. Ask your lead for the projectGroup
+       #               name if you are not sure. ProjectGroup will be the group name of the application ecosystem(container).
+       # JAVA_OPTS:    List all your JAVA_OPTS(no comma separated)  
+    - {role: application, java: "jdk1.8.0_20",
+                          tomcat: "apache-tomcat-8.0.21",
+                          projectName: "TestProject",
+                          projectContainer: "TestContainer",
+                          projectGroup: "Test",
+                          JAVA_OPTS: "-Xmx950m -XX:MaxMetaspaceSize=512M -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/data/dhhs/dhhs_cat_Batch-heapDumps"
+      }
+
